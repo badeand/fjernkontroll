@@ -2,16 +2,16 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+const char *mqtt_host = "192.168.10.104";
+const char *wifi_ssid = "X";
+const char *wifi_pwd = "X";
+
 static const int ledPin = 10;
 static const int buttonDog = 12;
 static const int buttonAtHome = 13;
 static const int buttonDim = 14;
 static const int buttonSleep = 15;
 static const int buttonNone = 0;
-
-static const int ledStateOFF = 2;
-
-static const int buttonStateAccept = 1;
 
 int pwm_counter = 0;
 int led_dim = 0;
@@ -35,35 +35,42 @@ void setupMQTT();
 
 void setup() {
     delay(2000);
-    Serial.println("Serial       .. INIT");
+    Serial.println(">>> Serial       .. INIT");
     setupSerial();
-    Serial.println("Serial       .. OK");
+    Serial.println(">>> Serial       .. OK");
 
-    Serial.println("Pin          .. INIT");
+    Serial.println(">>> Pin          .. INIT");
     setupPins();
-    Serial.println("Pin          .. OK");
+    Serial.println(">>> Pin          .. OK");
 
-    Serial.println("Wifi         .. INIT");
+    Serial.println(">>> Wifi         .. INIT");
     setupWifi();
-    Serial.println("Wifi         .. OK");
+    Serial.println(">>> Wifi         .. OK");
 
-    Serial.println("MQTT         .. INIT");
+    Serial.println(">>> MQTT         .. INIT");
     setupMQTT();
-    Serial.println("MQTT         .. OK");
+    Serial.println(">>> MQTT         .. OK");
 
-    Serial.println("SETUP        .. OK");
+    Serial.println(">>> SETUP        .. OK");
 }
 
 void setupMQTT() {
 
-    if (client.connect("ESP8266Client", "x", "x")) {
-        Serial.println("connected");
-    } else {
-        Serial.print("failed with state: ");
-        Serial.println(client.state());
-        Serial.println("MQTT SETUP FAILED! ");
-        while (true) {
-            delay(2000);
+    client.setServer(mqtt_host, 1883);
+
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        // Attempt to connect
+        if (client.connect("ESP8266 Client")) {
+            Serial.println("connected");
+            // ... and subscribe to topic
+            client.subscribe("ledStatus");
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+            // Wait 5 seconds before retrying
+            delay(5000);
         }
     }
 }
@@ -81,12 +88,12 @@ void setupPins() {
 
 
 void setupWifi() {
-    WiFi.begin("*", "*");
+    WiFi.begin(wifi_ssid, wifi_pwd);
 
-    Serial.println("Connecting: ");
+    Serial.print("Connecting: ");
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
-        Serial.print("*");
+        Serial.print(".");
     }
     Serial.println();
 
@@ -130,23 +137,29 @@ void loop() {
     timer++;
 
     if (activeButton == buttonNone && digitalRead(buttonAtHome)) {
+        client.publish("homie/program/athome/state","start");
         setActiveButton(buttonAtHome);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonSleep)) {
+        client.publish("homie/program/sleep/state","start");
         setActiveButton(buttonSleep);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonDog)) {
+        client.publish("homie/program/awaylights/state","start");
         setActiveButton(buttonDog);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonDim)) {
+        client.publish("homie/program/dimmed/state","start");
         setActiveButton(buttonDim);
     }
 
-
+    client.loop();
     delay(1);
 
 }
+
+
 

@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ESP8266WiFi.h>
 
 static const int ledPin = 10;
 static const int buttonDog = 12;
@@ -23,16 +24,50 @@ int buttonTimer = 0;
 
 int timer = 0;
 
+void setupPins();
+void setupSerial();
+void setupWifi();
+
+
+
+
 void setup() {
     delay(2000);
+    setupSerial();
+    Serial.println("Serial       .. OK");
+    setupPins();
+    Serial.println("Pin          .. OK");
+    setupWifi();
+    Serial.println("Wifi         .. OK");
+    Serial.println("SETUP        .. OK");
+}
+
+void setupSerial() { Serial.begin(9600); }
+
+void setupPins() {
     pinMode(ledPin, OUTPUT);
     pinMode(buttonDog, INPUT);
     pinMode(buttonAtHome, INPUT);
     pinMode(buttonDim, INPUT);
     pinMode(buttonSleep, INPUT);
-    Serial.begin(9600);
     delay(1000);
-    Serial.println("OK");
+}
+
+
+void setupWifi()
+{
+    WiFi.begin("*", "*");
+
+    Serial.println("Connecting: ");
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        delay(500);
+        Serial.print("*");
+    }
+    Serial.println();
+
+    Serial.print("Connected, IP address: ");
+    Serial.println(WiFi.localIP());
 }
 
 void update() {

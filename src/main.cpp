@@ -2,7 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-const char *mqtt_host = "192.168.10.104";
+const char *mqtt_host = "X";
 const char *wifi_ssid = "X";
 const char *wifi_pwd = "X";
 
@@ -33,9 +33,10 @@ void setupWifi();
 
 void setupMQTT();
 
+void dimLED(int period, int lowInterval, int highInterval);
+
 void setup() {
-    delay(2000);
-    Serial.println(">>> Serial       .. INIT");
+    // Serial.println(">>> Serial       .. INIT");
     setupSerial();
     Serial.println(">>> Serial       .. OK");
 
@@ -56,26 +57,30 @@ void setup() {
 
 void setupMQTT() {
 
+    digitalWrite(ledPin, HIGH);
+
     client.setServer(mqtt_host, 1883);
 
     while (!client.connected()) {
+        digitalWrite(ledPin, HIGH);
+
         Serial.print("Attempting MQTT connection...");
-        // Attempt to connect
-        if (client.connect("ESP8266 Client")) {
+        if (client.connect("Fjernkontroll")) {
             Serial.println("connected");
-            // ... and subscribe to topic
-            client.subscribe("ledStatus");
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
-            // Wait 5 seconds before retrying
-            delay(5000);
+            Serial.println(" try again in a few seconds");
+            dimLED(3000, 250, 250);
+
         }
     }
 }
 
-void setupSerial() { Serial.begin(9600); }
+void setupSerial() {
+    Serial.begin(9600);
+    delay(2000);
+}
 
 void setupPins() {
     pinMode(ledPin, OUTPUT);
@@ -83,7 +88,6 @@ void setupPins() {
     pinMode(buttonAtHome, INPUT);
     pinMode(buttonDim, INPUT);
     pinMode(buttonSleep, INPUT);
-    delay(1000);
 }
 
 
@@ -92,13 +96,23 @@ void setupWifi() {
 
     Serial.print("Connecting: ");
     while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
+        dimLED(250, 2, 1);
+        dimLED(250, 1, 2);
         Serial.print(".");
     }
     Serial.println();
 
     Serial.print("Connected, IP address: ");
     Serial.println(WiFi.localIP());
+}
+
+void dimLED(int period, int lowInterval, int highInterval) {
+    for (int i = 0; i < period / (lowInterval + highInterval); i++) {
+        digitalWrite(ledPin, HIGH);
+        delay(highInterval);
+        digitalWrite(ledPin, LOW);
+        delay(lowInterval);
+    }
 }
 
 void update() {
@@ -110,7 +124,6 @@ void update() {
             activeButton = buttonNone;
         }
     }
-
 
 }
 
@@ -137,22 +150,22 @@ void loop() {
     timer++;
 
     if (activeButton == buttonNone && digitalRead(buttonAtHome)) {
-        client.publish("homie/program/athome/state","start");
+        client.publish("homie/program/athome/state", "start");
         setActiveButton(buttonAtHome);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonSleep)) {
-        client.publish("homie/program/sleep/state","start");
+        client.publish("homie/program/sleep/state", "start");
         setActiveButton(buttonSleep);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonDog)) {
-        client.publish("homie/program/awaylights/state","start");
+        client.publish("homie/program/awaylights/state", "start");
         setActiveButton(buttonDog);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonDim)) {
-        client.publish("homie/program/dimmed/state","start");
+        client.publish("homie/program/dimmed/state", "start");
         setActiveButton(buttonDim);
     }
 

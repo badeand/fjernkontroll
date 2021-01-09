@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
 static const int ledPin = 10;
 static const int buttonDog = 12;
@@ -8,38 +9,63 @@ static const int buttonDim = 14;
 static const int buttonSleep = 15;
 static const int buttonNone = 0;
 
-static const int ledStateFadeOut = 1;
 static const int ledStateOFF = 2;
 
 static const int buttonStateAccept = 1;
-static const int buttonStateIgnore = 3;
 
 int pwm_counter = 0;
 int led_dim = 0;
 
-int ledState = ledStateOFF;
-int buttonState = buttonStateAccept;
 int activeButton = buttonNone;
 int buttonTimer = 0;
 
 int timer = 0;
 
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+
 void setupPins();
+
 void setupSerial();
+
 void setupWifi();
 
-
-
+void setupMQTT();
 
 void setup() {
     delay(2000);
+    Serial.println("Serial       .. INIT");
     setupSerial();
     Serial.println("Serial       .. OK");
+
+    Serial.println("Pin          .. INIT");
     setupPins();
     Serial.println("Pin          .. OK");
+
+    Serial.println("Wifi         .. INIT");
     setupWifi();
     Serial.println("Wifi         .. OK");
+
+    Serial.println("MQTT         .. INIT");
+    setupMQTT();
+    Serial.println("MQTT         .. OK");
+
     Serial.println("SETUP        .. OK");
+}
+
+void setupMQTT() {
+
+    if (client.connect("ESP8266Client", "x", "x")) {
+        Serial.println("connected");
+    } else {
+        Serial.print("failed with state: ");
+        Serial.println(client.state());
+        Serial.println("MQTT SETUP FAILED! ");
+        while (true) {
+            delay(2000);
+        }
+    }
 }
 
 void setupSerial() { Serial.begin(9600); }
@@ -54,13 +80,11 @@ void setupPins() {
 }
 
 
-void setupWifi()
-{
+void setupWifi() {
     WiFi.begin("*", "*");
 
     Serial.println("Connecting: ");
-    while (WiFi.status() != WL_CONNECTED)
-    {
+    while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print("*");
     }

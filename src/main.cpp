@@ -2,9 +2,9 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-const char *mqtt_host = "X";
-const char *wifi_ssid = "X";
-const char *wifi_pwd = "X";
+const char *mqtt_host = "192.168.10.104";
+const char *wifi_ssid = "Bache";
+const char *wifi_pwd = "71073826";
 
 static const int ledPin = 10;
 static const int buttonDog = 12;

@@ -22,7 +22,7 @@ int buttonTimer = 0;
 int timer = 0;
 
 WiFiClient espClient;
-PubSubClient client(espClient);
+PubSubClient mqttClient(espClient);
 
 
 void setupPins();
@@ -59,17 +59,17 @@ void setupMQTT() {
 
     digitalWrite(ledPin, HIGH);
 
-    client.setServer(mqtt_host, 1883);
+    mqttClient.setServer(mqtt_host, 1883);
 
-    while (!client.connected()) {
+    while (!mqttClient.connected()) {
         digitalWrite(ledPin, HIGH);
 
         Serial.print("Attempting MQTT connection...");
-        if (client.connect("Fjernkontroll")) {
+        if (mqttClient.connect("Fjernkontroll")) {
             Serial.println("connected");
         } else {
             Serial.print("failed, rc=");
-            Serial.print(client.state());
+            Serial.print(mqttClient.state());
             Serial.println(" try again in a few seconds");
             dimLED(3000, 250, 250);
 
@@ -150,26 +150,31 @@ void loop() {
     timer++;
 
     if (activeButton == buttonNone && digitalRead(buttonAtHome)) {
-        client.publish("homie/program/athome/state", "start");
+        mqttClient.publish("homie/program/athome/state", "start");
         setActiveButton(buttonAtHome);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonSleep)) {
-        client.publish("homie/program/sleep/state", "start");
+        mqttClient.publish("homie/program/sleep/state", "start");
         setActiveButton(buttonSleep);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonDog)) {
-        client.publish("homie/program/awaylights/state", "start");
+        mqttClient.publish("homie/program/awaylights/state", "start");
         setActiveButton(buttonDog);
     }
 
     if (activeButton == buttonNone && digitalRead(buttonDim)) {
-        client.publish("homie/program/dimmed/state", "start");
+        mqttClient.publish("homie/program/dimmed/state", "start");
         setActiveButton(buttonDim);
     }
 
-    client.loop();
+
+    if (!mqttClient.connected()) {
+        setupMQTT();
+    }
+
+    mqttClient.loop();
     delay(1);
 
 }
